@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<title>CSG: open on your phone</title>
+<style>
+  :root { color-scheme: light dark; --bg: #f1f5f7; --fg: #17191b; --muted: #50575c; --accent: #006c98; --accent-ink: #fff; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #111518; --fg: #e9eef1; --muted: #9ba6ad; --accent: #47b6e3; --accent-ink: #0b1216; } }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 17px/1.5 -apple-system, BlinkMacSystemFont, Arial, sans-serif; }
+  main { max-width: 30rem; margin: 0 auto; padding: 40px 20px; display: grid; gap: 16px; }
+  h1 { font-size: 22px; margin: 0; }
+  p { margin: 0; color: var(--muted); }
+  .who { font-size: 20px; font-weight: 700; color: var(--fg); overflow-wrap: anywhere; user-select: all; -webkit-user-select: all; }
+  a.go { display: block; text-align: center; padding: 14px; border-radius: 10px; background: var(--accent); color: var(--accent-ink); font-weight: 700; text-decoration: none; }
+  pre { white-space: pre-wrap; overflow-wrap: anywhere; font: 14px/1.45 ui-monospace, Menlo, monospace; margin: 0; padding: 10px 12px; border-radius: 8px; background: rgba(127,127,127,.12); color: var(--fg); max-height: 40vh; overflow: auto; }
+</style>
+</head>
+<body>
+<main id="m">
+  <h1>CSG Contractor Directory</h1>
+  <p>Nothing to open. Use the Call, Text or Email buttons in the directory.</p>
+</main>
+<script>
+/* Opens a phone call, text or email from the CSG Contractor Directory, which can't open those apps itself.
+   Everything is in the part of the link after "#", which browsers never send to a server.
+   Only phone numbers and email addresses are accepted, never web addresses:
+     #tel:+12145550123   #sms:+12145550123?body=...   #mailto:name@example.com?subject=...&body=... */
+window.addEventListener("hashchange", function () { location.reload(); });
+(function () {
+  var m = document.getElementById("m");
+  var raw = location.hash.slice(1), q = raw.indexOf("?");
+  var head = q < 0 ? raw : raw.slice(0, q), params = new URLSearchParams(q < 0 ? "" : raw.slice(q + 1));
+  var c = head.indexOf(":"), kind = head.slice(0, c).toLowerCase(), to = c < 0 ? "" : decodeURIComponent(head.slice(c + 1));
+  var body = (params.get("body") || "").slice(0, 4000), subject = (params.get("subject") || "").slice(0, 200);
+  var ios = /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent);
+  var url = "", label = "", what = "";
+  if ((kind === "tel" || kind === "sms") && /^\+?[0-9]{7,15}$/.test(to)) {
+    var d = to.replace(/\D/g, ""), pretty = d.length === 11 && d[0] === "1" ? "(" + d.slice(1, 4) + ") " + d.slice(4, 7) + "-" + d.slice(7) : to;
+    if (kind === "tel") { url = "tel:" + to; label = "Call " + pretty; what = "Calling"; }
+    else { url = "sms:" + to + (body ? (ios ? "&" : "?") + "body=" + encodeURIComponent(body) : ""); label = "Text " + pretty; what = "Texting"; }
+    to = pretty;
+  } else if (kind === "mailto" && /^[^\s@<>"',;:]+@[^\s@<>"',;:]+\.[a-z]{2,}$/i.test(to)) {
+    var qs = [subject ? "subject=" + encodeURIComponent(subject) : "", body ? "body=" + encodeURIComponent(body) : ""].filter(Boolean).join("&");
+    url = "mailto:" + to + (qs ? "?" + qs : ""); label = "Email " + to; what = "Emailing";
+  }
+  if (!url) return;
+  m.textContent = "";
+  var h = document.createElement("h1"); h.textContent = what; m.appendChild(h);
+  var w = document.createElement("div"); w.className = "who"; w.textContent = to; m.appendChild(w);
+  var a = document.createElement("a"); a.className = "go"; a.href = url; a.textContent = label; m.appendChild(a);
+  if (body) { var pre = document.createElement("pre"); pre.textContent = body; m.appendChild(pre); }
+  var p = document.createElement("p"); p.textContent = "If your phone didn't open it, tap the button. You can close this tab when you're done."; m.appendChild(p);
+  location.href = url;
+})();
+</script>
+</body>
+</html>
